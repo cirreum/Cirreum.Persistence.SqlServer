@@ -1,0 +1,42 @@
+namespace Cirreum.Persistence.Configuration;
+
+using Cirreum.Persistence.Health;
+using Cirreum.ServiceProvider.Configuration;
+
+/// <summary>
+/// Instance-specific settings for a Dapper SQL Server database connection.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Each instance represents a single database connection configuration, allowing for multiple
+/// database connections within the same application. Settings include authentication mode
+/// and command timeout.
+/// </para>
+/// <para>
+/// For Azure authentication, set <see cref="UseAzureAuthentication"/> to <c>true</c>.
+/// The factory will use <c>DefaultAzureCredential</c> to obtain access tokens automatically.
+/// </para>
+/// <para>
+/// The connection factory is registered as a singleton. Individual connections are short-lived
+/// and managed by ADO.NET connection pooling.
+/// </para>
+/// </remarks>
+/// <seealso cref="SqlServerSettings"/>
+public sealed class SqlServerInstanceSettings :
+	ServiceProviderInstanceSettings<SqlServerHealthCheckOptions> {
+
+	/// <summary>
+	/// Whether to use Azure (Entra ID) authentication.
+	/// When enabled, uses DefaultAzureCredential for token-based auth.
+	/// </summary>
+	public bool UseAzureAuthentication { get; set; }
+
+	/// <summary>
+	/// Command timeout in seconds. Default is 30.
+	/// </summary>
+	public int CommandTimeoutSeconds { get; set; } = 30;
+
+	/// <inheritdoc/>
+	public override SqlServerHealthCheckOptions? HealthOptions { get; set; }
+
+}
