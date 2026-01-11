@@ -162,7 +162,7 @@ Ensure your Azure SQL Database is configured for Azure AD authentication and the
 | Package | Description |
 |---------|-------------|
 | [Cirreum.Persistence.Sql](https://github.com/cirreum/Cirreum.Persistence.Sql) | Database-agnostic SQL abstraction layer |
-| Cirreum.Persistence.Sqlite | SQLite provider (coming soon) |
+| [Cirreum.Persistence.Sqlite](https://github.com/cirreum/Cirreum.Persistence.SQLite) | SQLite provider |
 | Cirreum.Persistence.MySql | MySQL provider (coming soon) |
 | Cirreum.Persistence.PostgreSql | PostgreSQL provider (coming soon) |
 
