@@ -126,6 +126,26 @@ public class ReportService([FromKeyedServices("reporting")] ISqlConnectionFactor
 }
 ```
 
+## DateOnly and TimeOnly Support
+
+This package includes built-in Dapper type handlers for `DateOnly` and `TimeOnly`, allowing you to use these types directly in your models and queries:
+
+```csharp
+public record Appointment(int Id, DateOnly Date, TimeOnly StartTime, TimeOnly EndTime);
+
+// Query with DateOnly/TimeOnly parameters
+var appointments = await conn.QueryAsync<Appointment>(
+    "SELECT * FROM Appointments WHERE Date = @Date AND StartTime > @MinTime",
+    new { Date = new DateOnly(2026, 1, 15), MinTime = new TimeOnly(9, 0) });
+
+// Insert with DateOnly/TimeOnly values
+await conn.ExecuteAsync(
+    "INSERT INTO Appointments (Date, StartTime, EndTime) VALUES (@Date, @StartTime, @EndTime)",
+    new { Date = DateOnly.FromDateTime(DateTime.Today), StartTime = new TimeOnly(9, 30), EndTime = new TimeOnly(10, 0) });
+```
+
+The type handlers are registered automatically when the package is loaded.
+
 ## Azure Entra ID Authentication
 
 When `UseAzureAuthentication` is enabled, the connection factory uses `DefaultAzureCredential` to acquire tokens for `https://database.windows.net/.default`. This supports:

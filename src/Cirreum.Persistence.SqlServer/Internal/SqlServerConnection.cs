@@ -13,10 +13,10 @@ internal class SqlServerConnection(
 ) : ISqlConnection {
 
 	public async Task<T?> QuerySingleOrDefaultAsync<T>(
-	string sql,
-	object? parameters,
-	IDbTransaction? transaction,
-	CancellationToken cancellationToken) {
+		string sql,
+		object? parameters,
+		IDbTransaction? transaction,
+		CancellationToken cancellationToken) {
 
 		var command = new CommandDefinition(
 			sql,

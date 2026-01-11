@@ -2,6 +2,7 @@ namespace Cirreum.Persistence.Internal;
 
 using Azure.Core;
 using Azure.Identity;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Threading;
 
@@ -9,6 +10,11 @@ using System.Threading;
 /// SQL Server connection factory with Azure authentication support.
 /// </summary>
 internal sealed class SqlServerConnectionFactory : ISqlConnectionFactory {
+
+	static SqlServerConnectionFactory() {
+		SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+		SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
+	}
 
 	private readonly string _connectionString;
 	private readonly bool _useAzureAdAuth;
