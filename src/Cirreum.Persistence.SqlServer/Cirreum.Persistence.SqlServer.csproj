@@ -12,10 +12,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Cirreum.Persistence.Sql" Version="1.0.7" />
-		<PackageReference Include="Cirreum.ServiceProvider" Version="1.0.7" />
-		<PackageReference Include="Cirreum.Core" Version="1.0.40" />
+		<PackageReference Include="Cirreum.ServiceProvider" Version="1.0.8" />
+		<PackageReference Include="Cirreum.Core" Version="1.0.41" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
-		<PackageReference Include="Dapper" Version="2.1.66" />
+		<PackageReference Include="Dapper" Version="2.1.72" />
 	</ItemGroup>
 
 	<ItemGroup>
