@@ -13,8 +13,13 @@ using Cirreum.ServiceProvider.Configuration;
 /// and command timeout.
 /// </para>
 /// <para>
-/// For Azure authentication, set <see cref="UseAzureAuthentication"/> to <c>true</c>.
-/// The factory will use <c>DefaultAzureCredential</c> to obtain access tokens automatically.
+/// For Entra (Azure AD) token authentication, set <see cref="UseAzureAuthentication"/> to
+/// <c>true</c>. The inherited <c>Credential</c> block selects whose identity acquires tokens
+/// (default chain, a managed identity, or the developer's tooling identity), and the inherited
+/// <c>Identifier</c> names the Entra tenant to authenticate against. Both are optional: with
+/// neither set, the default credential chain against its default tenant applies. Configuring
+/// a <c>Credential</c> block while <see cref="UseAzureAuthentication"/> is <c>false</c> is
+/// rejected at registration as a contradiction.
 /// </para>
 /// <para>
 /// The connection factory is registered as a singleton. Individual connections are short-lived
@@ -26,8 +31,9 @@ public sealed class SqlServerInstanceSettings :
 	ServiceProviderInstanceSettings<SqlServerHealthCheckOptions> {
 
 	/// <summary>
-	/// Whether to use Azure (Entra ID) authentication.
-	/// When enabled, uses DefaultAzureCredential for token-based auth.
+	/// Whether to use Entra (Azure AD) token authentication. When enabled, the factory
+	/// acquires access tokens using the identity selected by the inherited <c>Credential</c>
+	/// block, against the tenant named by the inherited <c>Identifier</c>.
 	/// </summary>
 	public bool UseAzureAuthentication { get; set; }
 

@@ -34,14 +34,19 @@ internal static class RegistrationExtensions {
 		string serviceKey,
 		SqlServerInstanceSettings settings) {
 
-		// Create options from settings
-		var options = new SqlServerOptions {
-			ConnectionString = settings.ConnectionString,
-			UseAzureAuthentication = settings.UseAzureAuthentication,
-			CommandTimeoutSeconds = settings.CommandTimeoutSeconds
-		};
+		// A credential block only applies to Entra token auth. Rejecting the
+		// contradiction at registration stops the block from binding and silently
+		// doing nothing on a connection-string-authenticated instance.
+		if (settings.Credential is not null && !settings.UseAzureAuthentication) {
+			throw new InvalidOperationException(
+				$"SQL Server instance '{serviceKey}' configures a Credential block but " +
+				"UseAzureAuthentication is false. The credential block selects the Entra " +
+				"identity used for token authentication — set UseAzureAuthentication to " +
+				"true, or remove the Credential block to authenticate via the connection " +
+				"string alone.");
+		}
 
-		var factory = new SqlServerConnectionFactory(options);
+		var factory = new SqlServerConnectionFactory(settings.ToConnectionOptions());
 
 		// Always register as keyed service for explicit access
 		services.AddKeyedSingleton<ISqlConnectionFactory>(serviceKey, factory);
@@ -64,14 +69,26 @@ internal static class RegistrationExtensions {
 		this IServiceProvider _,
 		SqlServerInstanceSettings settings) {
 
-		var options = new SqlServerOptions {
+		return new SqlServerHealthCheck(
+			settings.ToConnectionOptions(),
+			settings.HealthOptions ?? new SqlServerHealthCheckOptions());
+
+	}
+
+	/// <summary>
+	/// Maps instance settings onto the internal connection options, including the
+	/// credential selection (<c>Credential</c> block, <c>Identifier</c> ⇒ Entra tenant).
+	/// </summary>
+	/// <param name="settings">The instance settings.</param>
+	/// <returns>The mapped <see cref="SqlServerOptions"/>.</returns>
+	private static SqlServerOptions ToConnectionOptions(this SqlServerInstanceSettings settings) {
+		return new SqlServerOptions {
 			ConnectionString = settings.ConnectionString,
 			UseAzureAuthentication = settings.UseAzureAuthentication,
+			Credential = settings.Credential,
+			TenantId = settings.Identifier,
 			CommandTimeoutSeconds = settings.CommandTimeoutSeconds
 		};
-
-		return new SqlServerHealthCheck(options, settings.HealthOptions ?? new SqlServerHealthCheckOptions());
-
 	}
 
 }

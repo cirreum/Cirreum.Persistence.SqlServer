@@ -13,7 +13,7 @@
 **Cirreum.Persistence.SqlServer** is a SQL Server-specific implementation of the `ISqlConnectionFactory` interface from the [Cirreum.Persistence.Sql](https://github.com/cirreum/Cirreum.Persistence.Sql) abstraction layer. It provides:
 
 - SQL Server connection factory with Dapper integration
-- Azure Entra ID (Azure AD) authentication via `DefaultAzureCredential`
+- Entra (Azure AD) token authentication, with credential selection via the instance's `Credential` block and tenant pinning via its `Identifier`
 - Health check support for service monitoring
 - Integration with the Cirreum Service Provider framework
 
@@ -65,7 +65,9 @@ builder.AddSqlServer("default", settings =>
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `ConnectionString` | `string` | - | SQL Server connection string |
-| `UseAzureAuthentication` | `bool` | `false` | Enable Azure Entra ID authentication |
+| `UseAzureAuthentication` | `bool` | `false` | Enable Entra (Azure AD) token authentication |
+| `Credential` | `CredentialSettings?` | `null` | Inherited. Selects whose identity acquires tokens (`Default` / `ManagedIdentity` / `Developer`, with optional `IdentityId`). Only valid with `UseAzureAuthentication = true` |
+| `Identifier` | `string?` | `null` | Inherited. The Entra tenant to authenticate against |
 | `CommandTimeoutSeconds` | `int` | `30` | Default command timeout in seconds |
 
 ### SqlServerHealthCheckOptions
@@ -146,16 +148,39 @@ await conn.ExecuteAsync(
 
 The type handlers are registered automatically when the package is loaded.
 
-## Azure Entra ID Authentication
+## Entra (Azure AD) Authentication
 
-When `UseAzureAuthentication` is enabled, the connection factory uses `DefaultAzureCredential` to acquire tokens for `https://database.windows.net/.default`. This supports:
+When `UseAzureAuthentication` is enabled, the connection factory acquires tokens for
+`https://database.windows.net/.default` using the identity selected by the instance's
+`Credential` block:
 
-- Managed Identity (Azure VMs, App Service, AKS)
-- Azure CLI credentials (local development)
-- Visual Studio / VS Code credentials
-- Environment variables
+| Mode | Identity used |
+|------|---------------|
+| `Default` (or no block) | The default credential chain — environment, managed identity, developer tooling. `IdentityId` pins the chain's managed-identity leg to a specific user-assigned identity |
+| `ManagedIdentity` | Managed identity only — system-assigned, or the user-assigned identity named by `IdentityId` |
+| `Developer` | Developer tooling only — Visual Studio, Azure CLI, Azure PowerShell |
 
-Ensure your Azure SQL Database is configured for Azure AD authentication and the appropriate identity has been granted access.
+The instance's `Identifier` names the Entra tenant to authenticate against; leave it unset to
+use the credential's default tenant.
+
+```jsonc
+{
+  "ConnectionString": "Server=myserver.database.windows.net;Database=MyDb;",
+  "UseAzureAuthentication": true,
+  "Identifier": "00000000-0000-0000-0000-000000000000", // Entra tenant
+  "Credential": {
+    "Mode": "ManagedIdentity",
+    "IdentityId": "11111111-1111-1111-1111-111111111111" // user-assigned MI client id
+  }
+}
+```
+
+A `Credential` block on an instance with `UseAzureAuthentication = false` is rejected at
+registration — the block selects a token identity, so on a connection-string-authenticated
+instance it could only ever bind and silently do nothing.
+
+Ensure your Azure SQL Database is configured for Entra authentication and the selected
+identity has been granted access.
 
 ## Related Packages
 

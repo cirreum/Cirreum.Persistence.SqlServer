@@ -2,14 +2,18 @@ namespace Cirreum.Persistence.Internal;
 
 using Azure.Core;
 using Azure.Identity;
+using Cirreum.Providers.Configuration;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Threading;
 
 /// <summary>
-/// SQL Server connection factory with Azure authentication support.
+/// SQL Server connection factory with Entra (Azure AD) token authentication support.
 /// </summary>
 internal sealed class SqlServerConnectionFactory : ISqlConnectionFactory {
+
+	private static readonly TokenRequestContext SqlTokenRequest =
+		new(["https://database.windows.net/.default"]);
 
 	static SqlServerConnectionFactory() {
 		SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
@@ -17,21 +21,25 @@ internal sealed class SqlServerConnectionFactory : ISqlConnectionFactory {
 	}
 
 	private readonly string _connectionString;
-	private readonly bool _useAzureAdAuth;
 	private readonly int _commandTimeoutSeconds;
+	private readonly TokenCredential? _credential;
 
 	public SqlServerConnectionFactory(SqlServerOptions options) {
 		_connectionString = options.ConnectionString
 			?? throw new InvalidOperationException("ConnectionString is required.");
-		_useAzureAdAuth = options.UseAzureAuthentication;
 		_commandTimeoutSeconds = options.CommandTimeoutSeconds;
 
-		if (_useAzureAdAuth) {
-			// Ensure Integrated Security is not set when using Azure AD
+		if (options.UseAzureAuthentication) {
+			// Ensure Integrated Security is not set when using Entra token auth
 			var builder = new SqlConnectionStringBuilder(_connectionString) {
 				IntegratedSecurity = false
 			};
 			_connectionString = builder.ConnectionString;
+
+			// One credential per factory: Azure.Identity credentials cache tokens
+			// internally, so per-connection acquisition below is a cache read until
+			// the token nears expiry.
+			_credential = CreateCredential(options);
 		}
 	}
 
@@ -46,11 +54,8 @@ internal sealed class SqlServerConnectionFactory : ISqlConnectionFactory {
 
 	internal async Task<SqlConnection> CreateSqlConnectionAsync(CancellationToken cancellationToken = default) {
 		SqlConnection connection;
-		if (_useAzureAdAuth) {
-			var credential = new DefaultAzureCredential();
-			var token = await credential.GetTokenAsync(
-				new TokenRequestContext(["https://database.windows.net/.default"]),
-				cancellationToken);
+		if (_credential is not null) {
+			var token = await _credential.GetTokenAsync(SqlTokenRequest, cancellationToken);
 			connection = new SqlConnection(_connectionString) {
 				AccessToken = token.Token
 			};
@@ -59,6 +64,36 @@ internal sealed class SqlServerConnectionFactory : ISqlConnectionFactory {
 		}
 		await connection.OpenAsync(cancellationToken);
 		return connection;
+	}
+
+	private static TokenCredential CreateCredential(SqlServerOptions options) {
+
+		var tenantId = string.IsNullOrWhiteSpace(options.TenantId) ? null : options.TenantId;
+		var credential = options.Credential ?? new CredentialSettings();
+		var identityId = string.IsNullOrWhiteSpace(credential.IdentityId) ? null : credential.IdentityId;
+
+		return credential.Mode switch {
+
+			CredentialMode.Default => new DefaultAzureCredential(new DefaultAzureCredentialOptions {
+				TenantId = tenantId,
+				ManagedIdentityClientId = identityId,
+			}),
+
+			CredentialMode.ManagedIdentity => new ManagedIdentityCredential(
+				identityId is null
+					? ManagedIdentityId.SystemAssigned
+					: ManagedIdentityId.FromUserAssignedClientId(identityId)),
+
+			CredentialMode.Developer => new ChainedTokenCredential(
+				new VisualStudioCredential(new VisualStudioCredentialOptions { TenantId = tenantId }),
+				new AzureCliCredential(new AzureCliCredentialOptions { TenantId = tenantId }),
+				new AzurePowerShellCredential(new AzurePowerShellCredentialOptions { TenantId = tenantId })),
+
+			_ => throw new InvalidOperationException(
+				$"CredentialMode '{credential.Mode}' is not supported by the SQL Server persistence provider."),
+
+		};
+
 	}
 
 }

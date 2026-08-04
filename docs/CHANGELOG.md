@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-04
+
+### Added
+
+- **The inherited `Credential` block is honored.** The connection factory now selects the
+  Entra token identity from `Credential.Mode` — `Default` (chain, with `IdentityId` pinning
+  the managed-identity leg), `ManagedIdentity` (system-assigned or the user-assigned identity
+  named by `IdentityId`), `Developer` (Visual Studio / Azure CLI / Azure PowerShell) — with a
+  throwing discard on unmapped modes. Previously the block bound on
+  `SqlServerInstanceSettings` (inherited since the provider-credential wave) and was silently
+  ignored: the factory hardcoded a bare `DefaultAzureCredential`.
+- **The inherited `Identifier` is honored as the Entra tenant** across every credential mode.
+- **Contradiction guard at registration**: a `Credential` block on an instance with
+  `UseAzureAuthentication = false` throws instead of binding and doing nothing.
+
+### Changed
+
+- **One credential per factory instead of one per connection.** The factory previously
+  constructed a new `DefaultAzureCredential` for every connection it opened, defeating
+  Azure.Identity's internal token caching; the credential is now created once, so
+  per-connection token acquisition is a cache read until the token nears expiry.
+- Settings, registrar, and README documentation rewritten around credential selection —
+  they previously promised only a bare `DefaultAzureCredential`.
+
+### Updated
+
+- Updated NuGet packages (Cirreum spine 4.2.0 wave: `Cirreum.Contracts` 4.2.0 /
+  `Cirreum.Domain` 4.2.0).
+
 ## [1.0.44] - 2026-07-31
 
 ### Updated

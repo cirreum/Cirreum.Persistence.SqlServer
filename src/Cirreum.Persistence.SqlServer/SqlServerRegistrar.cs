@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 /// enabling dependency injection of <see cref="ISqlConnectionFactory"/> instances with support for:
 /// </para>
 /// <list type="bullet">
-///   <item><description>Azure Entra ID authentication via <c>DefaultAzureCredential</c></description></item>
+///   <item><description>Entra (Azure AD) token authentication, with the identity selected by the instance's <c>Credential</c> block and the tenant by its <c>Identifier</c></description></item>
 ///   <item><description>Multiple named instances using keyed DI services</description></item>
 ///   <item><description>Configurable service lifetimes (Singleton, Scoped, Transient)</description></item>
 ///   <item><description>Health check integration with customizable queries</description></item>
