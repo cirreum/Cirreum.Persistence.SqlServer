@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Referenced `System.Security.Cryptography.Pkcs` `10.0.14` directly. Microsoft.Data.SqlClient 7.1.1 pins an
+  older version with a moderate and a high severity advisory (GHSA-2fmv-rv2c-59x7,
+  GHSA-846f-f764-76mx).
+
+### Updated
+
+- Updated NuGet packages.
+
 ## [1.1.6] - 2026-08-29
 
 ### Updated
