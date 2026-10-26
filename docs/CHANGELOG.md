@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.7] - 2026-10-25
+
 ### Security
 
 - Referenced `System.Security.Cryptography.Pkcs` `10.0.14` directly. Microsoft.Data.SqlClient 7.1.1 pins an
